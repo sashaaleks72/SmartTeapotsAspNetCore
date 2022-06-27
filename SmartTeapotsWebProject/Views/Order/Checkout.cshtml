@@ -1,0 +1,73 @@
+﻿@model SmartTeapotsWebProject.Data.Models.Cart
+
+@{
+    ViewBag.Title = "Checkout";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="checkout">
+    <h2>Checkout</h2>
+
+    <h3>Orders</h3>
+        <table class="table">
+            <tr>
+                <th>
+                    Name
+                </th>
+                <th>
+                    Cost
+                </th>
+                <th>
+                    Quantity
+                </th>
+                <th>
+                    Total price
+                </th>
+                <th></th>
+            </tr>
+
+            @foreach (var item in Model.CartItems)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.SmartTeapot.Name)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Price) ₴
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Quantity)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TotalSum) ₴
+                    </td>
+                    <td>
+                        <img src="@item.SmartTeapot.ProductImg"/>
+                    </td>
+                </tr>
+            }
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><b>Total sum: </b><span>@Model.TotalPrice</span>₴</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                @using (@Html.BeginForm("Checkout", "Order", FormMethod.Post))
+                {
+                    <div class="form-group">
+                        <div class="col-md-offset-2 col-md-10">
+                            <td><button type="submit" class="btn btn-success">Confirm order</button></td>
+                        </div>
+                    </div>
+                }
+                </tr>
+        </table>
+    </div>
+</div>

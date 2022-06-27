@@ -1,16 +1,24 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmartTeapotsWebProject.Data.Models;
 
 namespace SmartTeapotsWebProject.Data.DBContexts
 {
-    public class SmartTeapotsDbContext : DbContext
+    public class SmartTeapotsDbContext : IdentityDbContext
     {
         public SmartTeapotsDbContext(DbContextOptions<SmartTeapotsDbContext> options) : base(options) { }
 
         public DbSet<SmartTeapot> SmartTeapots { get; set; } = null!;
+        public DbSet<CartItem> CartItems { get; set; } = null!;
+        public DbSet<User> MyUsers { get; set; } = null!;
+        public DbSet<Role> MyRoles { get; set; } = null!;
+        public DbSet<OrderProduct> OrderProducts { get; set; } = null!;
+        public DbSet<OrderStatus> OrderStatuses { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<SmartTeapot>().HasData(
                 new SmartTeapot()
                 { Id = 1, Name = "SmartTeapot1", Color = "Black", Material = "Plastic", Capacity = 2.3, Power = 1200, Price = 2399, Quantity = 12, Producer = "Xiaomi",

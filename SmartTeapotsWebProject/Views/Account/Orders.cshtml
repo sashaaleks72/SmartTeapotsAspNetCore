@@ -1,0 +1,64 @@
+﻿@model IEnumerable<SmartTeapotsWebProject.Data.Models.Order>
+
+@{
+    ViewBag.Title = "Orders";
+    Layout = "_Layout";
+}
+
+<div class="order-list">
+    <div class="container">
+        <h2>My orders</h2>
+        <table class="table">
+            <tr>
+                <th>
+                    OrderID
+                </th>
+                <th>
+                    Date of ordering
+                </th>
+                <th>
+                    Order status
+                </th>
+                <th>
+                    Prod-name
+                </th>
+                <th>
+                    Quantity
+                </th>
+                <th>
+                    Total price
+                </th>
+                <th>
+                </th>
+            </tr>
+
+            @foreach (var item in Model)
+            {
+                @foreach (var el in item.OrderProducts)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Id)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.OrderDate)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.OrderStatus.Name)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => el.SmartTeapot.Name)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => el.Quantity)
+                        </td>
+                        <td>
+                            <img src="@el.SmartTeapot.ProductImg" />
+                        </td>
+                    </tr>
+                }
+            }
+
+        </table>
+    </div>
+</div>

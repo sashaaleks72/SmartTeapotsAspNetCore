@@ -1,0 +1,25 @@
+﻿@model IEnumerable<SmartTeapotsWebProject.Data.Models.CartItem>
+
+@{
+    Layout = "_Layout";
+}
+
+<section class="catalog">
+    <div class="container">
+        <h2 class="text-center">Cart</h2>
+        <div class="row mt-2">
+        @foreach (var cartItem in Model)
+        {
+            <div class="alert-warning mt-3">
+                <b>Product name:</b> @cartItem.SmartTeapot.Name<br/>
+                <b>Price:</b> @cartItem.Price ₴ <br/>
+                <b>Quantity:</b> @cartItem.Quantity <br/>
+                <img src="@cartItem.SmartTeapot.ProductImg">
+            </div>
+        }
+
+        <hr/>
+        <a class="btn btn-danger" href='@Url.Action("Checkout", "Order")'>Buy</a>
+        </div>
+    </div>
+</section>
