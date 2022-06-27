@@ -19,7 +19,7 @@ namespace SmartTeapotsWebProject.Data.Repository
         {
             OrderProduct orderProduct;
             Order order = new Order();
-            User user = _dbContext.MyUsers.FirstOrDefault(u => u.Login == username)!;
+            User user = _dbContext.Users.FirstOrDefault(u => u.Login == username)!;
             
             if (user != null)
             {

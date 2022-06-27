@@ -4,28 +4,27 @@ using SmartTeapotsWebProject.Data.DBContexts;
 using SmartTeapotsWebProject.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 
 namespace SmartTeapotsWebProject.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly SmartTeapotsDbContext _dbContext;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, SmartTeapotsDbContext dbContext)
+        public AccountController(SmartTeapotsDbContext dbContext)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
             _dbContext = dbContext;
         }
 
         [Authorize]
         public IActionResult Orders()
         {
-            string username = User.Identity.Name;
+            string? username = User.Identity!.Name;
 
-            User user = _dbContext.MyUsers.FirstOrDefault(u => u.Login == username)!;
+            User user = _dbContext.Users.FirstOrDefault(u => u.Login == username)!;
 
             var orderList = user.Orders.ToList();
 
@@ -39,38 +38,37 @@ namespace SmartTeapotsWebProject.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SignUp(SignUp model)
         {
             if (ModelState.IsValid)
             {
-                IdentityUser user = new IdentityUser { Email = model.Email, UserName = model.Login };
+                User? user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Login == model.Login);
 
-                User userDetails = new User 
-                { 
-                    Email = model.Email, 
-                    SurName = model.SurName, 
-                    FirstName = model.FirstName, 
-                    Login = model.Login, 
-                    Password = model.Password,
-                    RoleId = 2
-                };
-
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (result.Succeeded)
+                if (user == null)
                 {
-                    await _signInManager.SignInAsync(user, false);
-                    _dbContext.MyUsers.Add(userDetails);
-                    _dbContext.SaveChanges();
+                    Role? role = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == "Client");
+
+                    user = new User
+                    {
+                        Email = model.Email,
+                        SurName = model.SurName,
+                        FirstName = model.FirstName,
+                        Login = model.Login,
+                        Password = model.Password,
+                        Role = role!
+                    };
+
+                    _dbContext.Users.Add(user);
+                    await _dbContext.SaveChangesAsync();
+
+                    await Authenticate(model.Login);
 
                     return RedirectToAction("Index", "Home");
                 }
                 else
                 {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
+                    ModelState.AddModelError("", "Incorrect login or(and) password");
                 }
             }
             return View(model);
@@ -88,17 +86,13 @@ namespace SmartTeapotsWebProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(model.Login, model.Password, model.RememberMe, false);
-                if (result.Succeeded)
+                User? user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Login == model.Login && u.Password == model.Password);
+
+                if (user != null)
                 {
-                    if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-                    {
-                        return Redirect(model.ReturnUrl);
-                    }
-                    else
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
+                    await Authenticate(model.Login); // аутентификация
+ 
+                    return RedirectToAction("Index", "Home");
                 }
                 else
                 {
@@ -108,26 +102,27 @@ namespace SmartTeapotsWebProject.Controllers
             return View(model);
         }
 
+        [Authorize]
         public async Task<IActionResult> UserProfile()
         {
-            IdentityUser? user;
             UProfile? model;
-            User userDetails;
+            User? user;
 
-            string? userName = User.Identity.Name;
+            string? userName = User.Identity!.Name;
 
-            if (userName != null)
+            user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Login == userName)!;
+
+            if (user != null)
             {
-                user = await _userManager.FindByNameAsync(userName);
-                userDetails = _dbContext.MyUsers.FirstOrDefault(u => u.Login == userName)!;
-                model = new UProfile {
-                    Login = user.UserName,
+                model = new UProfile
+                {
+                    Login = user.Login,
                     Email = user.Email,
-                    FirstName = userDetails.FirstName,
-                    SurName = userDetails.SurName,
-                    OldPassword = userDetails.Password,
-                    NewPassword = userDetails.Password,
-                    ConfirmNewPassword = userDetails.Password
+                    FirstName = user.FirstName,
+                    SurName = user.SurName,
+                    OldPassword = user.Password,
+                    NewPassword = user.Password,
+                    ConfirmNewPassword = user.Password
                 };
             }
             else
@@ -138,43 +133,25 @@ namespace SmartTeapotsWebProject.Controllers
             return View(model);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> UserProfile(UProfile model)
         {
             if (ModelState.IsValid)
             {
-                IdentityUser? user = await _userManager.FindByNameAsync(model.Login);
-                User userDetails = _dbContext.MyUsers.FirstOrDefault(u => u.Login == model.Login)!;
+                User? user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Login == model.Login);
 
-                if (user != null && userDetails != null)
+                if (user != null)
                 {
                     user.Email = model.Email;
-                    user.UserName = model.Login;
-                    userDetails.Email = model.Email;
-                    userDetails.Login = model.Login;
-                    userDetails.FirstName = model.FirstName;
-                    userDetails.SurName = model.SurName;
-                    userDetails.Password = model.NewPassword;
+                    user.Login = model.Login;
+                    user.FirstName = model.FirstName;
+                    user.SurName = model.SurName;
+                    user.Password = model.NewPassword;
 
-                    var result = await _userManager.UpdateAsync(user);
+                    _dbContext.Users.Update(user);
 
-                    if (!string.IsNullOrEmpty(model.NewPassword))
-                    {
-                        result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
-                        _dbContext.MyUsers.Update(userDetails);
-                    }
-
-                    if (result.Succeeded)
-                    {
-                        return RedirectToAction("UserProfile", "Account");
-                    }
-                    else
-                    {
-                        foreach (var error in result.Errors)
-                        {
-                            ModelState.AddModelError(string.Empty, error.Description);
-                        }
-                    }
+                    return RedirectToAction("UserProfile", "Account");
                 }
                 else
                 {
@@ -184,11 +161,23 @@ namespace SmartTeapotsWebProject.Controllers
             return View(model);
         }
 
+        private async Task Authenticate(string userName)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimsIdentity.DefaultNameClaimType, userName)
+            };
+
+            ClaimsIdentity id = new ClaimsIdentity(claims, "ApplicationCookie", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
+            
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(id));
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
     }

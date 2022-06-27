@@ -49,6 +49,13 @@ namespace SmartTeapotsWebProject.Data.Models
             return new Cart(context!, cartId);
         }
 
+        public void ClearCart()
+        {
+            var cartItems = _dbContext.CartItems.Where(t => t.CartId == CartId).ToList();
+            _dbContext.RemoveRange(cartItems);
+            _dbContext.SaveChanges();
+        }
+
         public void AddToCart(SmartTeapot teapot)
         {
             var teapotToEdit = _dbContext.CartItems.FirstOrDefault(t => t.SmartTeapot.Id == teapot.Id && t.CartId == CartId);

@@ -17,6 +17,7 @@ namespace SmartTeapotsWebProject.Controllers
             _cart = cart;
         }
 
+        [Authorize]
         public IActionResult Checkout()
         {
             if (_cart.CartItems.Count == 0)
@@ -28,6 +29,7 @@ namespace SmartTeapotsWebProject.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         [ActionName("Checkout")]
         public IActionResult CheckoutAccept()
         {
@@ -42,8 +44,10 @@ namespace SmartTeapotsWebProject.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [Authorize]
         public IActionResult Complete()
         {
+            _cart.ClearCart();
             ViewBag.Message = "Order successfully completed!";
             return View();
         }

@@ -6,6 +6,7 @@ using SmartTeapotsWebProject.Configs;
 using Microsoft.EntityFrameworkCore;
 using SmartTeapotsWebProject.Data.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 var connConfig = new ConnectionConfig("dbconfig.json", $"{builder.Environment.ContentRootPath}\\Configs").Build();
@@ -13,17 +14,19 @@ var connConfig = new ConnectionConfig("dbconfig.json", $"{builder.Environment.Co
 builder.Services.AddTransient<IAllSmartTeapots, SmartTeapotRepository>();
 builder.Services.AddTransient<IAllOrders, OrdersRepository>();
 builder.Services.AddDbContext<SmartTeapotsDbContext>(options => options.UseLazyLoadingProxies().UseSqlServer(connConfig.GetConnectionString("DefaultConnection")));
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 5;
-    options.Password.RequireUppercase = true;
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedEmail = false;
-})
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<SmartTeapotsDbContext>();
+//builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+//{
+//    options.Password.RequireDigit = true;
+//    options.Password.RequiredLength = 5;
+//    options.Password.RequireUppercase = true;
+//    options.Lockout.MaxFailedAccessAttempts = 5;
+//    options.User.RequireUniqueEmail = true;
+//    options.SignIn.RequireConfirmedEmail = false;
+//})
+//    .AddRoles<IdentityRole>()
+//    .AddEntityFrameworkStores<SmartTeapotsDbContext>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options => options.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Account/SignIn"));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSession();
 builder.Services.AddScoped(c => Cart.GetCart(c));
